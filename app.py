@@ -17,7 +17,7 @@ if 'theme' not in st.session_state:
 def switch_theme():
     st.session_state.theme = 'light' if st.session_state.theme == 'dark' else 'dark'
 
-st.sidebar.button("Toggle Theme", on_click=switch_theme)
+st.button("Toggle Theme", on_click=switch_theme)
 
 # Apply theme styles
 if st.session_state.theme == 'dark':
@@ -28,6 +28,27 @@ else:
     background_color = '#fff'
     text_color = '#000'
     border_color = '#ccc'
+
+# Inject global styling via CSS
+st.markdown(f"""
+    <style>
+    body {{
+        background-color: {background_color} !important;
+        color: {text_color} !important;
+    }}
+    .stApp {{
+        background-color: {background_color};
+        color: {text_color};
+    }}
+    .stTextInput > div > div > input,
+    .stSelectbox > div > div > div > input,
+    .stMultiSelect > div > div > div > div,
+    .stButton > button {{
+        color: {text_color};
+        background-color: transparent;
+    }}
+    </style>
+""", unsafe_allow_html=True)
 
 table_styles = {
     'background-color': background_color,
