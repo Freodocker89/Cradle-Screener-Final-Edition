@@ -1,32 +1,32 @@
 import streamlit as st
-from streamlit_autorefresh import st_autorefresh
 import ccxt
 import pandas as pd
 import datetime
 
-# Page setup
+# Setup
 st.set_page_config(layout="wide")
 st.title("📊 Cradle Screener")
 
-# Bitget API
+# Bitget setup
 BITGET = ccxt.bitget()
 TIMEFRAMES = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '12h', '1d', '3d', '1w', '1M']
 
-# Select timeframes
+# Timeframe selection
 selected_timeframes = st.multiselect("Select Timeframes to Scan", TIMEFRAMES, default=['1h', '4h', '1d'])
 
-# Manual refresh button
-if 'scan_results' not in st.session_state:
-    st.session_state.scan_results = []
+# Session state to store results
+if 'cradle_results' not in st.session_state:
+    st.session_state.cradle_results = None
 if 'last_scanned' not in st.session_state:
     st.session_state.last_scanned = None
 
+# Refresh button
 if st.button("🔄 Refresh Screener"):
     st.success("✅ Screener refreshed!")
-    st.session_state.scan_results = []  # Reset results
-    st.session_state.last_scanned = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    st.session_state.cradle_results = []
+    st.session_state.last_scanned = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    # Load market list
+    # Get market symbols
     markets = BITGET.load_markets()
     symbols = [s for s in markets if '/USDT' in s and 'SPOT' not in markets[s]['id']]
 
@@ -50,6 +50,7 @@ if st.button("🔄 Refresh Screener"):
 
         return is_bearish and is_small_bull and breaks_high and closed_in_cradle
 
+    # Run the cradle check
     for symbol in symbols:
         for tf in selected_timeframes:
             try:
@@ -59,22 +60,23 @@ if st.button("🔄 Refresh Screener"):
                 df.set_index('timestamp', inplace=True)
 
                 if is_cradle_setup(df):
-                    st.session_state.scan_results.append({
+                    st.session_state.cradle_results.append({
                         'Symbol': symbol,
                         'Timeframe': tf,
-                        'Last Close': df['close'].iloc[-1]
+                        'Entry Candle Close': df['close'].iloc[-1]
                     })
+
             except Exception as e:
                 st.warning(f"Error fetching {symbol} on {tf}: {e}")
 
-# Show last scanned time
+# Show timestamp and results
 if st.session_state.last_scanned:
     st.caption(f"Last scanned: {st.session_state.last_scanned}")
 
-# Show results
-if st.session_state.scan_results:
-    df_results = pd.DataFrame(st.session_state.scan_results)
+if st.session_state.cradle_results:
+    df_results = pd.DataFrame(st.session_state.cradle_results)
     st.dataframe(df_results)
 else:
-    st.info("No Cradle setups found yet. Click the 'Refresh Screener' button to begin scanning.")
+    st.info("No Cradle setups found. Click 'Refresh Screener' to scan.")
+
 
